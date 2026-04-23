@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clínica Veterinaria - Evaluacion Corte 3</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
+        .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        input, select, button { padding: 8px; margin: 5px 0; }
+        pre { background: #333; color: #0f0; padding: 10px; border-radius: 5px; overflow-x: auto; max-height: 300px; }
+        .alerta { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Clínica Veterinaria (Corte 3)</h1>
+    
+    <div class="card">
+        <h3>1. Simular Sesión (Login)</h3>
+        <p>Cambia el rol para probar que el RLS y los permisos GRANT funcionen.</p>
+        <label>Rol:</label>
+        <select id="rolSelect">
+            <option value="admin">Administrador (Ve todo)</option>
+            <option value="recepcion">Recepción (Ve todo, pero no vacunas)</option>
+            <option value="veterinario">Veterinario (Filtro RLS)</option>
+        </select>
+        
+        <label>ID del Veterinario (Solo si eliges rol Veterinario):</label>
+        <input type="number" id="vetIdInput" placeholder="Ej. 1 (Dr. López), 2 o 3" value="1">
+    </div>
+
+    <div class="card">
+        <h3>2. Búsqueda de Mascotas</h3>
+        <input type="text" id="searchInput" placeholder="Nombre de la mascota (o inyección SQL)">
+        <button onclick="buscarMascotas()">Buscar Mascotas</button>
+        <pre id="resultadoBusqueda">Aquí saldrán los resultados...</pre>
+    </div>
+
+    <div class="card">
+        <h3>3. Vacunación Pendiente (Prueba de Caché Redis)</h3>
+        <button onclick="cargarVacunasPendientes()">Consultar Vacunas Pendientes</button>
+        <p class="alerta">¡Revisa tu terminal de Node para ver si dice CACHE HIT o CACHE MISS!</p>
+        <pre id="resultadoVacunas">Aquí saldrán las vacunas...</pre>
+        
+        <hr>
+        <h4>Aplicar nueva vacuna (Para invalidar el caché)</h4>
+        <input type="number" id="mascotaId" placeholder="ID Mascota">
+        <input type="number" id="vacunaId" placeholder="ID Vacuna">
+        <button onclick="aplicarVacuna()">Aplicar Vacuna</button>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3001/api';
+
+        // Función para leer quién está "logueado"
+        function getAuthParams() {
+            const rol = document.getElementById('rolSelect').value;
+            const vetId = document.getElementById('vetIdInput').value;
+            return `rol=${rol}&vetId=${vetId}`;
+        }
+
+        async function buscarMascotas() {
+            const search = document.getElementById('searchInput').value;
+            const auth = getAuthParams();
+            const res = await fetch(`${API_URL}/mascotas/buscar?nombre=${search}&${auth}`);
+            const data = await res.json();
+            document.getElementById('resultadoBusqueda').innerText = JSON.stringify(data, null, 2);
+        }
+
+        async function cargarVacunasPendientes() {
+            const auth = getAuthParams();
+            const res = await fetch(`${API_URL}/vacunacion-pendiente?${auth}`);
+            const data = await res.json();
+            document.getElementById('resultadoVacunas').innerText = JSON.stringify(data, null, 2);
+        }
+
+        async function aplicarVacuna() {
+            const rol = document.getElementById('rolSelect').value;
+            const vetId = document.getElementById('vetIdInput').value;
+            const mascotaId = document.getElementById('mascotaId').value;
+            const vacunaId = document.getElementById('vacunaId').value;
+
+            const res = await fetch(`${API_URL}/vacunas/aplicar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rol, vetId, mascotaId, vacunaId })
+            });
+            const data = await res.json();
+            alert("Respuesta del servidor:\n" + JSON.stringify(data));
+        }
+    </script>
+</body>
+</html>
