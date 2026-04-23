@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  # Base de datos principal
+  db_veterinaria:
+    image: postgres:15-alpine
+    container_name: postgres_corte3
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: clinica_vet
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata_corte3:/var/lib/postgresql/data
+
+  # Servidor de caché que pide el profe
+  redis_cache:
+    image: redis:alpine
+    container_name: redis_corte3  
+    restart: always
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata_corte3:
